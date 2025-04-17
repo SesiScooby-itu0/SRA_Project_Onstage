@@ -1,0 +1,75 @@
+#include <Encoder.h> // Biblioteca para uso de Encoders (sensores de rotação)
+
+// Para motor 1:
+const int pinoPWM1 = 5;  // Pino do Driver ou Microcontrolador responsável por controlar o PWM da porta
+const int pinoDirecao1 = 4;  // Pino do Driver ou Microcontrolador responsável por controlar a direção
+const int pinoDirecao2 = 10; // Pino do Driver ou Microcontrolador responsável por controlar a direção
+
+// Definição do encoder
+const int tach1motor1 = 2;  // Canal do encoder 1
+const int tach2motor1 = 8;  // Canal do encoder 2
+
+// Definição de Variáveis
+unsigned long startTime;
+const unsigned long duration = 10000 * 1000; // 10.000 segundos em milissegundos
+
+// Inicializa o encoder com os pinos declarados no início do programa
+Encoder EncoderMotorNXT1(tach1motor1, tach2motor1);
+
+void setup() {
+  // Configuração dos pinos do motor
+  pinMode(pinoPWM1, OUTPUT);
+  pinMode(pinoDirecao1, OUTPUT);
+  pinMode(pinoDirecao2, OUTPUT);
+
+  // Iniciar comunicação serial para depuração
+  Serial.begin(9600);
+
+  // Ativar o motor
+  Serial.println("Ativando motor...");
+  mover(1, 220, 1);  // Mover motor no sentido anti-horário
+  
+  // Registrar o tempo de início
+  startTime = millis();
+}
+
+void loop() {
+  // Verificar se 10.000 segundos se passaram
+  if (millis() - startTime >= duration) {
+    Serial.println("Tempo de execução concluído. Parando motor...");
+    mover(1, 0, 1); // Parar o motor
+    while (true); // Parar o loop (ou você pode usar `return;` se quiser reiniciar)
+  }
+
+  // Exibir o tempo restante (opcional)
+  unsigned long timeLeft = duration - (millis() - startTime);
+  Serial.print("Tempo restante: ");
+  Serial.print(timeLeft / 1000);
+  Serial.println(" segundos");
+
+  delay(1000); // Aguardar 1 segundo antes de verificar novamente
+}
+
+// Função para ligar os motores do NXT
+void mover(int motor, int potencia, int direcao) {
+  if (potencia > 255)
+    potencia = 255;
+  if (potencia < 0)
+    potencia = 0;
+  if (direcao > 1)
+    direcao = 1;
+  if (direcao < 0)
+    direcao = 0;
+
+  if (motor == 1) {
+    if (direcao == 0) {
+      digitalWrite(pinoDirecao1, 1);
+      digitalWrite(pinoDirecao2, 0);
+      analogWrite(pinoPWM1, potencia);
+    } else {
+      digitalWrite(pinoDirecao1, 0);
+      digitalWrite(pinoDirecao2, 1);
+      analogWrite(pinoPWM1, potencia);
+    }
+  }
+}

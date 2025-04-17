@@ -1,0 +1,115 @@
+#include <Encoder.h>// Biblioteca para uso de Encoders (sensores de rotação)
+
+// Para motor 1:
+const int pinoPWM1 = 5;  // Pin of the Driver or Microcontroller responsible for controlling the PWM of the port.
+const int pinoDirecao1 = 4;  // Pin of the Driver or Microcontroller responsible for controlling the direction.
+const int pinoDirecao2 = 10; // Pin of the Driver or Microcontroller responsible for controlling the direction.
+
+// Para o sensor ultrassônico:
+const int trigPin = 11;  // Pin TRIG ultrassonic sensor
+const int echoPin = 12;  // Pin ECHO ultrassonic sensor
+
+// Definição do encoder
+const int tach1motor1 = 2;  // encoder 1
+const int tach2motor1 = 8;  // encoder 2
+
+// Definition of Variables and Initial Values.
+int encoder1 = 0, inicial1 = 0, delta1 = 0, graus = 250;
+long duration;
+float distance;
+const float distanceThreshold = 30.0;  // Distância limite em centímetros para ativar o motor
+
+// Initialize the encoder with the pins declared at the beginning of the program.
+Encoder EncoderMotorNXT1(tach1motor1, tach2motor1);
+
+void setup() {
+  // pin configuration 
+  pinMode(pinoPWM1, OUTPUT);
+  pinMode(pinoDirecao1, OUTPUT);
+  pinMode(pinoDirecao2, OUTPUT);
+  pinMode(13, OUTPUT);
+  // ultrassonic sensor config
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Read distance
+   distance = medirDistancia();
+
+  // Treshhold distance
+  if (distance < distanceThreshold) {
+    Serial.println(distance);
+    // Start motor 90 degrees
+    inicial1 = abs(EncoderMotorNXT1.read());
+    graus = 100;
+    do {
+      mover(1, 120, 1); 
+      encoder1 = abs(EncoderMotorNXT1.read());
+      delta1 = abs(encoder1 - inicial1);
+    } while (delta1 < graus);
+
+    // Stop motor
+    mover(1, 0, 1);
+
+    delay(2000);
+    digitalWrite(13, HIGH);
+    delay(23000);
+
+    inicial1 = abs(EncoderMotorNXT1.read());
+    do {
+      mover(1, 190, 0);  
+      encoder1 = abs(EncoderMotorNXT1.read());
+      delta1 = abs(encoder1 - inicial1);
+    } while (delta1 < graus);
+
+    mover(1, 0, 0);
+  } else {
+    Serial.println("Nenhum objeto detectado:");
+    delay(1000);  // wait to measure
+    digitalWrite(13, LOW);
+
+  }
+}
+
+// function to measure the distance in the ultrassonic sensor
+float medirDistancia() {
+  // sending ultrassonic pulse
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+
+  
+  float dist = (duration * 0.034) / 2;
+  return dist;
+}
+
+// Start NXT motors
+void mover(int motor, int potencia, int direcao) {
+  if (potencia > 255)
+    potencia = 255;
+  if (potencia < 0)
+    potencia = 0;
+  if (direcao > 1)
+    direcao = 1;
+  if (direcao < 0)
+    direcao = 0;
+
+  if (motor == 1) {
+    if (direcao == 0) {
+      digitalWrite(pinoDirecao1, 1);
+      digitalWrite(pinoDirecao2, 0);
+      analogWrite(pinoPWM1, potencia);
+    } else {
+      digitalWrite(pinoDirecao1, 0);
+      digitalWrite(pinoDirecao2, 1);
+      analogWrite(pinoPWM1, potencia);
+    }
+  }
+}
